@@ -1,1 +1,1 @@
-This is a simple tool based on PHP to store vehicle mileage and fueling information. To use this tool, please input vehicle-tracking.sql into a MySQL database and change respective credentials in the code.
+This is a simple tool based on PHP to store vehicle mileage and fueling information. To use this tool, please input vehicle_tracking.sql into a MySQL server and change respective credentials in the code.
