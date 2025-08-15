@@ -54,8 +54,8 @@ $reset_trip_result = $db->query($reset_trip_query);
 
         <!-- Sorting Dropdown -->
         <div class="mb-4">
-            <label for="sortDropdown" class="mr-2">Sort by:</label>
-            <select id="sortDropdown" class="p-2 border rounded">
+            <label for="sortDropdown" class="text-1xl">Sort by:</label>
+            <select id="sortDropdown" class="columnSelect">
                 <option value="date_desc">Date (Newest First)</option>
                 <option value="date_asc">Date (Oldest First)</option>
                 <option value="location_asc">Location (A-Z)</option>
@@ -68,7 +68,20 @@ $reset_trip_result = $db->query($reset_trip_query);
         <div id="tablesContainer">
             <!-- Mileage Records Table -->
             <div id="mileageTable" class="table-wrapper">
-                <h2 class="text-2xl font-semibold mb-4">Mileage Records</h2>
+                <div class="search-header">
+                    <h2 class="text-2xl font-semibold mb-4">Mileage Records</h2>
+                    <div class="text-1xl">Search <input type="text" class="searchInput"/> within
+                        <select class="columnSelect">
+                            <option value="all">All Columns</option>
+                            <option value="0">Date Time</option>
+                            <option value="1">ODO (km)</option>
+                            <option value="2">Trip (km)</option>
+                            <option value="3">Avg (km/L)</option>
+                            <option value="4">Range (km)</option>
+                            <option value="5">Location</option>
+                        </select>
+                    </div>
+                </div>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -99,7 +112,19 @@ $reset_trip_result = $db->query($reset_trip_query);
 
             <!-- Fueling Records Table -->
             <div id="fuelingTable" class="table-wrapper hidden">
-                <h2 class="text-2xl font-semibold mb-4">Fueling Records</h2>
+                <div class="search-header">
+                    <h2 class="text-2xl font-semibold mb-4">Fueling Records</h2>
+                    <div class="text-1xl">Search <input type="text" class="searchInput"/> within
+                        <select class="columnSelect">
+                            <option value="all">All Columns</option>
+                            <option value="0">Date Time</option>
+                            <option value="1">Amount (RM)</option>
+                            <option value="2">Liter</option>
+                            <option value="3">Range After (km)</option>
+                            <option value="4">Location</option>
+                        </select>
+                    </div>
+                </div>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -128,7 +153,17 @@ $reset_trip_result = $db->query($reset_trip_query);
 
             <!-- Reset Trip Records Table -->
             <div id="resetTripTable" class="table-wrapper hidden">
-                <h2 class="text-2xl font-semibold mb-4">Reset Trip Records</h2>
+                <div class="search-header">
+                    <h2 class="text-2xl font-semibold mb-4">Reset Trip Records</h2>
+                    <div class="text-1xl">Search <input type="text" class="searchInput"/> within
+                        <select class="columnSelect">
+                            <option value="all">All Columns</option>
+                            <option value="0">Date Time</option>
+                            <option value="1">Mileage (km)</option>
+                            <option value="2">Location</option>
+                        </select>
+                    </div>
+                </div>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -198,15 +233,40 @@ $reset_trip_result = $db->query($reset_trip_query);
 
             function applyCurrentSort() {
                 const visibleTable = document.querySelector('.table-wrapper:not(.hidden) table');
-                if (visibleTable) {
-                    sortTable(visibleTable);
-                }
+                if (visibleTable) {sortTable(visibleTable);}
             }
 
             sortDropdown.addEventListener('change', applyCurrentSort);
+            applyCurrentSort(); // Initial sort
+        });
 
-            // Initial sort
-            applyCurrentSort();
+        document.querySelectorAll('.table-wrapper').forEach(container => {
+            let searchInput = container.querySelector('.searchInput');
+            let columnSelect = container.querySelector('.columnSelect');
+            let tableBody = container.querySelector('tbody');
+
+            function filterTable() {
+                let searchValue = searchInput.value.toLowerCase();
+                let selectedColumn = columnSelect.value;
+                let rows = tableBody.querySelectorAll('tr');
+
+                rows.forEach(row => {
+                    let cells = row.querySelectorAll('td');
+                    let match = false;
+                    if (selectedColumn === 'all') {
+                        match = Array.from(cells).some(cell => cell.innerText.toLowerCase().includes(searchValue));
+                    } else {
+                        let colIndex = parseInt(selectedColumn, 10);
+                        if (cells[colIndex] && cells[colIndex].innerText.toLowerCase().includes(searchValue)) {
+                            match = true;
+                        }
+                    }
+                    row.style.display = match ? '' : 'none';
+                });
+            }
+
+            searchInput.addEventListener('keyup', filterTable);
+            columnSelect.addEventListener('change', filterTable);
         });
     </script>
     </body>
