@@ -17,6 +17,7 @@ body {
 /* Typography */
 .text-3xl { font-size: 1.875rem; }
 .text-2xl { font-size: 1.5rem; }
+.text-1xl { font-size: 1rem; }
 .font-bold { font-weight: 700; }
 .font-semibold { font-weight: 600; }
 .mb-8 { margin-bottom: 2rem; }
@@ -93,6 +94,30 @@ a {
 }
 a:hover {
     color: #2b6cb0;
+}
+
+
+/* Search and Sort container styles */
+.search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.columnSelect {
+    padding: 6px 10px; 
+    font-size: 14px; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    background-color: #fff; 
+    color: #333; 
+    cursor: pointer; 
+}
+
+.columnSelect:focus {
+    outline: none; 
+    border-color: #007BFF; 
+    box-shadow: 0 0 4px #007BFF55; 
 }
 
 /* Form container styles */
