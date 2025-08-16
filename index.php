@@ -52,18 +52,6 @@ $reset_trip_result = $db->query($reset_trip_query);
             </button>
         </div>
 
-        <!-- Sorting Dropdown -->
-        <div class="mb-4">
-            <label for="sortDropdown" class="text-1xl">Sort by:</label>
-            <select id="sortDropdown" class="columnSelect">
-                <option value="date_desc">Date (Newest First)</option>
-                <option value="date_asc">Date (Oldest First)</option>
-                <option value="location_asc">Location (A-Z)</option>
-                <option value="location_desc">Location (Z-A)</option>
-                <!-- Add more sorting options here -->
-            </select>
-        </div>
-
         <!-- Tables Container -->
         <div id="tablesContainer">
             <!-- Mileage Records Table -->
@@ -79,6 +67,20 @@ $reset_trip_result = $db->query($reset_trip_query);
                             <option value="3">Avg (km/L)</option>
                             <option value="4">Range (km)</option>
                             <option value="5">Location</option>
+                        </select>
+                    </div>
+                    <div class="text-1xl">Sort by:
+                        <select class="sortColumnSelect columnSelect">
+                            <option value="0" data-sort-type="date">Date Time</option>
+                            <option value="1" data-sort-type="numeric">ODO (km)</option>
+                            <option value="2" data-sort-type="numeric">Trip (km)</option>
+                            <option value="3" data-sort-type="numeric">AVG (km/L)</option>
+                            <option value="4" data-sort-type="numeric">Range (km)</option>
+                            <option value="5" data-sort-type="text">Location</option>
+                        </select>
+                        <select class="sortDirectionSelect columnSelect">
+                            <option value="asc">Ascending</option>
+                            <option value="desc" selected>Descending</option>
                         </select>
                     </div>
                 </div>
@@ -124,6 +126,19 @@ $reset_trip_result = $db->query($reset_trip_query);
                             <option value="4">Location</option>
                         </select>
                     </div>
+                    <div class="text-1xl">Sort by:
+                        <select class="sortColumnSelect columnSelect">
+                            <option value="0" data-sort-type="date">Date Time</option>
+                            <option value="1" data-sort-type="numeric">Amount (RM)</option>
+                            <option value="2" data-sort-type="numeric">Liter</option>
+                            <option value="3" data-sort-type="numeric">Range After (km)</option>
+                            <option value="4" data-sort-type="text">Location</option>
+                        </select>
+                        <select class="sortDirectionSelect columnSelect">
+                            <option value="asc">Ascending</option>
+                            <option value="desc" selected>Descending</option>
+                        </select>
+                    </div>
                 </div>
                 <table class="data-table">
                     <thead>
@@ -163,6 +178,17 @@ $reset_trip_result = $db->query($reset_trip_query);
                             <option value="2">Location</option>
                         </select>
                     </div>
+                    <div class="text-1xl">Sort by:
+                        <select class="sortColumnSelect columnSelect">
+                            <option value="0" data-sort-type="date">Date Time</option>
+                            <option value="1" data-sort-type="numeric">Mileage (km)</option>
+                            <option value="2" data-sort-type="text">Location</option>
+                        </select>
+                        <select class="sortDirectionSelect columnSelect">
+                            <option value="asc">Ascending</option>
+                            <option value="desc" selected>Descending</option>
+                        </select>
+                    </div>
                 </div>
                 <table class="data-table">
                     <thead>
@@ -193,81 +219,107 @@ $reset_trip_result = $db->query($reset_trip_query);
             const mileageTable = document.getElementById('mileageTable');
             const fuelingTable = document.getElementById('fuelingTable');
             const resetTripTable = document.getElementById('resetTripTable');
-            const sortDropdown = document.getElementById('sortDropdown');
 
             function showTable(tableToShow) {
                 [mileageTable, fuelingTable, resetTripTable].forEach(table => {
                     table.classList.add('hidden');
                 });
                 tableToShow.classList.remove('hidden');
-                applyCurrentSort();
+                applyCurrentSort(tableToShow);
             }
 
             document.getElementById('showMileageBtn').addEventListener('click', () => showTable(mileageTable));
             document.getElementById('showFuelingBtn').addEventListener('click', () => showTable(fuelingTable));
             document.getElementById('showResetTripBtn').addEventListener('click', () => showTable(resetTripTable));
 
-            function sortTable(table) {
+            document.querySelectorAll('.table-wrapper').forEach(container => {
+                const colSelect = container.querySelector('.sortColumnSelect');
+                const dirSelect = container.querySelector('.sortDirectionSelect');
+                const table = container.querySelector('table');
+                colSelect.value = '0';
+                dirSelect.value = 'desc';
+                colSelect.addEventListener('change', () => sortTable(table, colSelect.value, dirSelect.value));
+                dirSelect.addEventListener('change', () => sortTable(table, colSelect.value, dirSelect.value));
+                sortTable(table, colSelect.value, dirSelect.value);
+            });
+
+            function sortTable(table, colIndex, direction) {
                 const tbody = table.querySelector('tbody');
                 const rows = Array.from(tbody.querySelectorAll('tr'));
-                const [field,direction] = sortDropdown.value.split('_');
-
-                rows.sort((a, b) => {
-                    if (field == 'date') {  
-                        aValue = a.querySelector(`[data-time]`).dataset.sort || a.querySelector(`[data-time]`).textContent.trim();
-                        bValue = b.querySelector(`[data-time]`).dataset.sort || b.querySelector(`[data-time]`).textContent.trim();
-                    } else if (field == 'location') {  
-                        aValue = a.querySelector(`[data-location]`).textContent.trim();
-                        bValue = b.querySelector(`[data-location]`).textContent.trim();
-                    }
+                const colSelect = table.closest('.table-wrapper').querySelector('.sortColumnSelect');
+                const selectedOption = colSelect.options[colSelect.selectedIndex];
+                const sortType = selectedOption.dataset.sortType || 'text';
+                const sortAttr = selectedOption.dataset.sortAttr;
                 
-                    if (direction == 'asc') {
-                        return aValue.localeCompare(bValue, 'en', {numeric: true, sensitivity: 'base'});
-                    } else {
-                        return bValue.localeCompare(aValue, 'en', {numeric: true, sensitivity: 'base'});
+                rows.sort((a, b) => {
+                    const aCell = a.cells[colIndex];
+                    const bCell = b.cells[colIndex];
+                    let aValue, bValue;
+                    if (sortAttr && aCell.hasAttribute(sortAttr) && bCell.hasAttribute(sortAttr)) {
+                        aValue = aCell.getAttribute(sortAttr);
+                        bValue = bCell.getAttribute(sortAttr);
+                    } 
+                    else {
+                        aValue = aCell.textContent.trim();
+                        bValue = bCell.textContent.trim();
+                    }
+                    
+                    switch(sortType) {
+                        case 'numeric':
+                            aValue = parseFloat(aValue.replace(/[^\d.]/g, '')) || 0;
+                            bValue = parseFloat(bValue.replace(/[^\d.]/g, '')) || 0;
+                            return direction === 'asc' ? aValue - bValue : bValue - aValue;
+                        case 'date':
+                            aValue = new Date(aCell.textContent).getTime() || 0;
+                            bValue = new Date(bCell.textContent).getTime() || 0;
+                            return direction === 'asc' ? aValue - bValue : bValue - aValue;
+                        case 'text':
+                            aValue = aValue.toLowerCase();
+                            bValue = bValue.toLowerCase();
+                            return direction === 'asc' 
+                                ? aValue.localeCompare(bValue) 
+                                : bValue.localeCompare(aValue);
                     }
                 });
 
                 rows.forEach(row => tbody.appendChild(row));
             }
 
-            function applyCurrentSort() {
-                const visibleTable = document.querySelector('.table-wrapper:not(.hidden) table');
-                if (visibleTable) {sortTable(visibleTable);}
+            function applyCurrentSort(tableContainer) {
+                const colSelect = tableContainer.querySelector('.sortColumnSelect');
+                const dirSelect = tableContainer.querySelector('.sortDirectionSelect');
+                const table = tableContainer.querySelector('table');
+                sortTable(table, colSelect.value, dirSelect.value);
             }
 
-            sortDropdown.addEventListener('change', applyCurrentSort);
-            applyCurrentSort(); // Initial sort
-        });
+            document.querySelectorAll('.table-wrapper').forEach(container => {
+                let searchInput = container.querySelector('.searchInput');
+                let columnSelect = container.querySelector('.columnSelect');
+                let tableBody = container.querySelector('tbody');
 
-        document.querySelectorAll('.table-wrapper').forEach(container => {
-            let searchInput = container.querySelector('.searchInput');
-            let columnSelect = container.querySelector('.columnSelect');
-            let tableBody = container.querySelector('tbody');
-
-            function filterTable() {
-                let searchValue = searchInput.value.toLowerCase();
-                let selectedColumn = columnSelect.value;
-                let rows = tableBody.querySelectorAll('tr');
-
-                rows.forEach(row => {
-                    let cells = row.querySelectorAll('td');
-                    let match = false;
-                    if (selectedColumn === 'all') {
-                        match = Array.from(cells).some(cell => cell.innerText.toLowerCase().includes(searchValue));
-                    } else {
-                        let colIndex = parseInt(selectedColumn, 10);
-                        if (cells[colIndex] && cells[colIndex].innerText.toLowerCase().includes(searchValue)) {
-                            match = true;
+                function filterTable() {
+                    let searchValue = searchInput.value.toLowerCase();
+                    let selectedColumn = columnSelect.value;
+                    let rows = tableBody.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        let cells = row.querySelectorAll('td');
+                        let match = false;
+                        if (selectedColumn === 'all') {
+                            match = Array.from(cells).some(cell => cell.innerText.toLowerCase().includes(searchValue));
+                        } else {
+                            let colIndex = parseInt(selectedColumn, 10);
+                            if (cells[colIndex] && cells[colIndex].innerText.toLowerCase().includes(searchValue)) {
+                                match = true;
+                            }
                         }
-                    }
-                    row.style.display = match ? '' : 'none';
-                });
-            }
+                        row.style.display = match ? '' : 'none';
+                    });
+                }
 
-            searchInput.addEventListener('keyup', filterTable);
-            columnSelect.addEventListener('change', filterTable);
+                searchInput.addEventListener('keyup', filterTable);
+                columnSelect.addEventListener('change', filterTable);
+            });
         });
     </script>
-    </body>
+</body>
 </html>
