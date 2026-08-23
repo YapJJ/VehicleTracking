@@ -4,7 +4,6 @@ try{
     if ($db->connect_error) {throw new Exception($db->connect_error);}
 } catch (Exception $e) {
     echo ("<h2>MySQL Server is offline.</h2><br><p>Check server status and try again.</p><br>");
-    // echo $e;
     exit;
 }
 
@@ -211,6 +210,24 @@ $reset_trip_result = $db->query($reset_trip_query);
                     </tbody>
                 </table>
             </div>
+
+            <!--Pagination Footer-->
+            <div class="table-footer">
+                <label class="text-1xl">Rows per page:
+                    <select id="rowsPerPageSelect" class="columnSelect">
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="all">All</option>
+                    </select>
+                </label>
+                <label class="text-1xl">Page:
+                    <select id="pageSelect" class="columnSelect"></select>
+                </label>
+                <span id="pgInfo" class="text-1xl"></span>
+            </div>
+
         </div>
     </div>
 
@@ -226,6 +243,7 @@ $reset_trip_result = $db->query($reset_trip_query);
                 });
                 tableToShow.classList.remove('hidden');
                 applyCurrentSort(tableToShow);
+                syncFooterToTable(tableToShow, true);
             }
 
             document.getElementById('showMileageBtn').addEventListener('click', () => showTable(mileageTable));
@@ -250,7 +268,7 @@ $reset_trip_result = $db->query($reset_trip_query);
                 const selectedOption = colSelect.options[colSelect.selectedIndex];
                 const sortType = selectedOption.dataset.sortType || 'text';
                 const sortAttr = selectedOption.dataset.sortAttr;
-                
+
                 rows.sort((a, b) => {
                     const aCell = a.cells[colIndex];
                     const bCell = b.cells[colIndex];
@@ -258,12 +276,12 @@ $reset_trip_result = $db->query($reset_trip_query);
                     if (sortAttr && aCell.hasAttribute(sortAttr) && bCell.hasAttribute(sortAttr)) {
                         aValue = aCell.getAttribute(sortAttr);
                         bValue = bCell.getAttribute(sortAttr);
-                    } 
+                    }
                     else {
                         aValue = aCell.textContent.trim();
                         bValue = bCell.textContent.trim();
                     }
-                    
+
                     switch(sortType) {
                         case 'numeric':
                             aValue = parseFloat(aValue.replace(/[^\d.]/g, '')) || 0;
@@ -276,8 +294,8 @@ $reset_trip_result = $db->query($reset_trip_query);
                         case 'text':
                             aValue = aValue.toLowerCase();
                             bValue = bValue.toLowerCase();
-                            return direction === 'asc' 
-                                ? aValue.localeCompare(bValue) 
+                            return direction === 'asc'
+                                ? aValue.localeCompare(bValue)
                                 : bValue.localeCompare(aValue);
                     }
                 });
@@ -319,6 +337,113 @@ $reset_trip_result = $db->query($reset_trip_query);
                 searchInput.addEventListener('keyup', filterTable);
                 columnSelect.addEventListener('change', filterTable);
             });
+
+
+            // PAGINATION
+            const rowsPerPageSelect = document.getElementById('rowsPerPageSelect');
+            const pageSelect = document.getElementById('pageSelect');
+            const pgInfo = document.getElementById('pgInfo');
+
+            const paginationState = new Map();
+
+            function getState(table) {
+                if (!paginationState.has(table)) {
+                    paginationState.set(table, { page: 1, rowsPerPage: 10, isAll: false });
+                }
+                return paginationState.get(table);
+            }
+
+            function getActiveTable() {
+                return [mileageTable, fuelingTable, resetTripTable]
+                    .find(table => !table.classList.contains('hidden'));
+            }
+
+            function getFilterVisibleRows(table) {
+                const tbody = table.querySelector('tbody');
+                return Array.from(tbody.querySelectorAll('tr'))
+                    .filter(row => row.dataset.filtered !== '1');
+            }
+
+            function populatePageSelect(totalPages, currentPage, force = false) {
+                if (force || pageSelect.dataset.totalPages != totalPages) {
+                    pageSelect.innerHTML = '';
+                    for (let i = 1; i <= totalPages; i++) {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.textContent = i;
+                        pageSelect.appendChild(opt);
+                    }
+                    pageSelect.dataset.totalPages = totalPages;
+                }
+                pageSelect.value = currentPage;
+            }
+
+            function syncFooterToTable(table, force = false) {
+                const state = getState(table);
+                rowsPerPageSelect.value = state.isAll ? 'all' : String(state.rowsPerPage);
+                paginateTable(table, false, force);
+            }
+
+            function paginateTable(table, resetToFirstPage = false, forceRebuild = false) {
+                const state = getState(table);
+                if (resetToFirstPage) state.page = 1;
+
+                const filterVisibleRows = getFilterVisibleRows(table);
+                const totalItems = filterVisibleRows.length;
+
+                const rppValue = rowsPerPageSelect.value;
+                state.isAll = rppValue === 'all';
+                state.rowsPerPage = state.isAll ? Math.max(totalItems, 1) : parseInt(rppValue, 10);
+
+                const totalPages = Math.max(1, Math.ceil(totalItems / state.rowsPerPage));
+
+                state.page = Math.min(Math.max(state.page, 1), totalPages);
+
+                const start = (state.page - 1) * state.rowsPerPage;
+                const end = start + state.rowsPerPage;
+
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    row.style.display = 'none';
+                });
+                filterVisibleRows.slice(start, end).forEach(row => {
+                    row.style.display = '';
+                });
+
+                populatePageSelect(totalPages, state.page, forceRebuild);
+                pgInfo.textContent = totalItems === 0
+                    ? 'No results'
+                    : `Showing ${Math.min(start + 1, totalItems)}-${Math.min(end, totalItems)} of ${totalItems}`;
+            }
+
+            rowsPerPageSelect.addEventListener('change', () => paginateTable(getActiveTable(), true));
+            pageSelect.addEventListener('change', () => {
+                getState(getActiveTable()).page = parseInt(pageSelect.value, 10);
+                paginateTable(getActiveTable());
+            });
+
+            document.querySelectorAll('.table-wrapper').forEach(container => {
+                const colSelect = container.querySelector('.sortColumnSelect');
+                const dirSelect = container.querySelector('.sortDirectionSelect');
+                const table = container.querySelector('table');
+                colSelect.addEventListener('change', () => paginateTable(table, true));
+                dirSelect.addEventListener('change', () => paginateTable(table, true));
+            });
+
+            document.querySelectorAll('.table-wrapper').forEach(container => {
+                const searchInput = container.querySelector('.searchInput');
+                const columnSelect = container.querySelector('.columnSelect');
+                const table = container.querySelector('table');
+                searchInput.addEventListener('keyup', () => paginateTable(table, true));
+                columnSelect.addEventListener('change', () => paginateTable(table, true));
+            });
+
+            [mileageTable, fuelingTable, resetTripTable].forEach(table => {
+                paginateTable(table, true);
+            });
+            syncFooterToTable(getActiveTable(), true);
+            // END: PAGINATION
+
+
         });
     </script>
 </body>
