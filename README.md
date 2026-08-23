@@ -2,4 +2,4 @@ This is a simple tool developed to store vehicle mileage and fueling information
 
 16 Aug 2025: Added search function in each tables. <br>
 17 Aug 2025: Updated sort function from global to each seperate tables. <br>
-23 Aug 2026: Updated Version 1.2: Pagination<br>=
+23 Aug 2026: Updated Version 1.2: Pagination<br>
