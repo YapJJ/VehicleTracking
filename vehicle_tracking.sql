@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.3deb1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Dec 19, 2024 at 03:59 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Host: localhost:3306
+-- Generation Time: Aug 23, 2026 at 09:01 AM
+-- Server version: 11.8.6-MariaDB-5ubuntu0.1 from Ubuntu
+-- PHP Version: 8.5.4
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -26,11 +26,11 @@ USE `vehicle_tracking`;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `fueling`
+-- Table structure for table `Fueling`
 --
 
-DROP TABLE IF EXISTS `fueling`;
-CREATE TABLE `fueling` (
+DROP TABLE IF EXISTS `Fueling`;
+CREATE TABLE `Fueling` (
   `id` int(11) NOT NULL,
   `date_time` datetime DEFAULT NULL,
   `amount_rm` decimal(5,2) DEFAULT NULL,
@@ -40,14 +40,22 @@ CREATE TABLE `fueling` (
   `location` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `Fueling`
+--
+
+INSERT INTO `Fueling` (`id`, `date_time`, `amount_rm`, `liter`, `range_b4_km`, `range_after_km`, `location`) VALUES
+(1, '2024-07-24 12:40:00', 55.00, 26.829, NULL, 487, 'Petronas Grand Saga 2'),
+(2, '2024-08-22 03:10:00', 50.00, 25.125, 125, 467, 'Petronas Seremban R&R (Southbound)');
+
 -- --------------------------------------------------------
 
 --
--- Table structure for table `mileagerecord`
+-- Table structure for table `MileageRecord`
 --
 
-DROP TABLE IF EXISTS `mileagerecord`;
-CREATE TABLE `mileagerecord` (
+DROP TABLE IF EXISTS `MileageRecord`;
+CREATE TABLE `MileageRecord` (
   `id` int(11) NOT NULL,
   `odo_km` int(11) DEFAULT NULL,
   `trip_km` decimal(6,1) DEFAULT NULL,
@@ -60,11 +68,19 @@ CREATE TABLE `mileagerecord` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Triggers `mileagerecord`
+-- Dumping data for table `MileageRecord`
+--
+
+INSERT INTO `MileageRecord` (`id`, `odo_km`, `trip_km`, `avg_km_l`, `range_km`, `location`, `odo_change`, `trip_change`, `date_time`) VALUES
+(1, NULL, 0.0, 13.6, 487, 'Petronas Grand Saga 2', NULL, NULL, '2024-07-24 12:40:00'),
+(2, 40700, 23.6, 13.6, 486,'Petronas Seremban R&R (Southbound)', NULL, 23.6, '2024-07-25 08:30:00');
+
+--
+-- Triggers `MileageRecord`
 --
 DROP TRIGGER IF EXISTS `calculate_changes`;
 DELIMITER $$
-CREATE TRIGGER `calculate_changes` BEFORE INSERT ON `mileagerecord` FOR EACH ROW BEGIN
+CREATE TRIGGER `calculate_changes` BEFORE INSERT ON `MileageRecord` FOR EACH ROW BEGIN
     DECLARE prev_odo INT;
     DECLARE prev_trip DECIMAL(6,1);
     
@@ -87,38 +103,44 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `resettrip`
+-- Table structure for table `ResetTrip`
 --
 
-DROP TABLE IF EXISTS `resettrip`;
-CREATE TABLE `resettrip` (
+DROP TABLE IF EXISTS `ResetTrip`;
+CREATE TABLE `ResetTrip` (
   `id` int(11) NOT NULL,
   `date_time` datetime DEFAULT NULL,
   `mileage_km` decimal(7,1) DEFAULT NULL,
   `location` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `ResetTrip`
+--
+
+INSERT INTO `ResetTrip` (`id`, `date_time`, `mileage_km`, `location`) VALUES
+(1, '2024-07-24 12:40:00', 1103.7, 'Petronas Grand Saga 2');
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `fueling`
+-- Indexes for table `Fueling`
 --
-ALTER TABLE `fueling`
+ALTER TABLE `Fueling`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `mileagerecord`
+-- Indexes for table `MileageRecord`
 --
-ALTER TABLE `mileagerecord`
+ALTER TABLE `MileageRecord`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `resettrip`
+-- Indexes for table `ResetTrip`
 --
-ALTER TABLE `resettrip`
+ALTER TABLE `ResetTrip`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -126,22 +148,22 @@ ALTER TABLE `resettrip`
 --
 
 --
--- AUTO_INCREMENT for table `fueling`
+-- AUTO_INCREMENT for table `Fueling`
 --
-ALTER TABLE `fueling`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `Fueling`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
 
 --
--- AUTO_INCREMENT for table `mileagerecord`
+-- AUTO_INCREMENT for table `MileageRecord`
 --
-ALTER TABLE `mileagerecord`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `MileageRecord`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=333;
 
 --
--- AUTO_INCREMENT for table `resettrip`
+-- AUTO_INCREMENT for table `ResetTrip`
 --
-ALTER TABLE `resettrip`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `ResetTrip`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
